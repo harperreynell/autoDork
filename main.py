@@ -46,7 +46,7 @@ def findValidURLS(urlList):
     
     return newURLList
 
-def getURL(query):
+def getURLStarter(query):
     google = "http://www.google.com/search?ie=UTF-8&q=" + quote_plus(query)
     bing = "https://www.bing.com/search?q=" + quote_plus(query)
     r = requests.get(google)
@@ -80,11 +80,43 @@ def changeFileName(name):
     newName = newName.replace("____", "_").replace("___", "_").replace("__", "_")
     return newName
 
-def downloadAllPages():
+def downloadDorks():
     with open("dorksData/dorks.dat") as f:
         for line in f:
             filename = changeFileName(line)
-            downloadPage(getURL(line), filename)
+            downloadPage(getURLStarter(line), filename)
+
+def getURL(query, s):
+    r = requests.get(query)
+    if not s: print("Google status code: " + str(r.status_code))
+    match r.status_code:
+        case 200:
+            return query
+        case 400:
+            print(bcolors.WARNING + "[-] Bad request" + bcolors.ENDC)
+            return "skip"
+        case 404:
+            print(bcolors.WARNING + "[-] Page not found" + bcolors.ENDC)
+            return "skip"
+        case _:
+            print(bcolors.WARNING + "[-] Wrong exit code" + bcolors.ENDC)
+            return None
+
+def downloadPages():
+    global checkpoint
+    with open("outputs/URLList.txt") as f:
+        for i, line in enumerate(f):
+            if getURL(line, False) == None:
+                checkpoint = i
+                print(bcolors.FAIL + "[-] Error downloading page: " + line + bcolors.ENDC)
+                print(bcolors.WARNING + "[!] Saved checkpoint as " + str(checkpoint) + " line" + bcolors.ENDC)
+                return None
+            elif getURL(line, True) == "skip":
+                print(bcolors.WARNING + "[!] Skipping page: " + line + bcolors.ENDC)
+                continue
+            else:
+                downloadPage(getURL(line, True), changeFileName(line))
+
 
 def writeURLS():
     outFile = open("outputs/URLList.txt", "w")
@@ -99,11 +131,6 @@ def writeURLS():
             print(url)
             outFile.write(url + "\n")
     outFile.close()
-
-# def goThroughFilesAndGetURLS():
-#     fileList = getFiles()
-#     for file in fileList:
-#         writeURLS("pages/" + file)
     
 def getFiles():
     path = "pages/"
@@ -112,10 +139,13 @@ def getFiles():
     return dir_list
 
 def main():
-    # downloadAllPages()
-    writeURLS()
+    # downloadDorks()
+    # writeURLS()
+    if  downloadPages() == None:
+        print(bcolors.FAIL + "[-] Error downloading pages" + bcolors.ENDC)
+        print(bcolors.WARNING + "[!] Checkpoint: " + str(checkpoint) + bcolors.ENDC)
+        print(bcolors.WARNING + "[!] Will be restarting from checkpoint in a while" + bcolors.ENDC)
 
 if __name__ == "__main__":
     main()
 
-# config files (maybe, just for fun)
