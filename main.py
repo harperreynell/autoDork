@@ -103,19 +103,20 @@ def getURL(query, s):
             return None
 
 def downloadPages():
-    global checkpoint
     with open("outputs/URLList.txt") as f:
         for i, line in enumerate(f):
             if getURL(line, False) == None:
                 checkpoint = i
                 print(bcolors.FAIL + "[-] Error downloading page: " + line + bcolors.ENDC)
                 print(bcolors.WARNING + "[!] Saved checkpoint as " + str(checkpoint) + " line" + bcolors.ENDC)
-                return None
+                return checkpoint
             elif getURL(line, True) == "skip":
                 print(bcolors.WARNING + "[!] Skipping page: " + line + bcolors.ENDC)
                 continue
             else:
                 downloadPage(getURL(line, True), changeFileName(line))
+
+    return None
 
 
 def writeURLS():
@@ -125,7 +126,7 @@ def writeURLS():
         f = open("pages/" + file, "r")
         content = f.read()
         urls = findValidURLS(extractURLS(content))
-        f.close
+        f.close()
 
         for url in urls:
             print(url)
@@ -140,8 +141,9 @@ def getFiles():
 
 def main():
     # downloadDorks()
-    # writeURLS()
-    if  downloadPages() == None:
+    writeURLS()
+    checkpoint = downloadPages()
+    if checkpoint is not None:
         print(bcolors.FAIL + "[-] Error downloading pages" + bcolors.ENDC)
         print(bcolors.WARNING + "[!] Checkpoint: " + str(checkpoint) + bcolors.ENDC)
         print(bcolors.WARNING + "[!] Will be restarting from checkpoint in a while" + bcolors.ENDC)
